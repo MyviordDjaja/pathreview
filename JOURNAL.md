@@ -34,10 +34,9 @@ newline tricks, covered by tests that inject these payloads and assert they are 
 > environment, so the Postgres/Redis/Chroma backing services and the FastAPI backend were not
 > brought up — the `localhost:5173` frontend loads independently of them.
 
-**Cohort ledger:** [ ] Issue added to cohort ledger
-> Claimed on the GitHub issue thread (commented as MyviordDjaja, AI201 section 2a). Ledger entry
-> still pending — will check this box once my name / GitHub username / issue # are added on my
-> section's tab.
+**Cohort ledger:** [x] Issue added to cohort ledger
+> Claimed on the GitHub issue thread (commented as MyviordDjaja, AI201 section 2a) and recorded on
+> my section's tab of the cohort issue ledger (name / GitHub username / issue #64).
 
 ---
 
