@@ -69,3 +69,28 @@ newline tricks, covered by tests that inject these payloads and assert they are 
 - Docker/Compose was not installed in my environment, so the Postgres + Redis + Chroma services and
   the FastAPI backend were not started this week. Not a blocker for issue #64, whose fix and tests
   live entirely in the `safety` module and run under `pytest` without those services.
+
+---
+
+## Week 8 — Reproduction & solution planning
+
+**Reproduction commit link:** https://github.com/MyviordDjaja/pathreview/commit/47a15e10b74f9ac6db8f04560eb8169b5b0be2d4
+
+**Reproduction summary:**
+I reproduced the bug with a failing unit test file, `tests/unit/test_prompt_defense_newline_repro.py`,
+that runs the documented injection payloads through `PromptDefense.sanitize()`. The tests assert the
+`\nSystem:` role-switch and `\n---\n` separator patterns are neutralized; all three fail against
+current code (the payloads pass through untouched, and `is_injection_attempt()` still fires on the
+sanitized output), confirming the issue is real and lives in `safety/prompt_defense.py`.
+
+**PLAN.md link:** https://github.com/MyviordDjaja/pathreview/blob/fix/64-sanitize-newline-injection/PLAN.md
+
+**Walkthrough video (recommended):** not recorded
+
+**Blockers or open questions:**
+- Design choice for the fix: strip the newline markers vs. escape/de-anchor them (break the line
+  boundary without deleting content). No non-test code currently calls `PromptDefense`, so there's no
+  downstream consumer constraining the exact output — I'll keep the transformation minimal.
+- Whether to also fix the related detection gap (`System  :` with spaces before the colon, the
+  existing failing `test_whitespace_variations_detected`) within this issue's scope. Leaning yes,
+  since it's the same module and the same newline theme.
