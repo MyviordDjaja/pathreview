@@ -13,7 +13,7 @@ logger = structlog.get_logger()
 # the root cause of issue #64: detection already knew ``\n---\n`` and ``\nSystem:``
 # were dangerous, yet the sanitizer never acted on them.
 SEPARATOR_PATTERN = r"\n\s*---+\s*\n"  # Separator line that can end the system prompt
-ROLE_SWITCH_PATTERN = r"\n\s*(?:System|Human|Assistant):"  # Fake conversational turn
+ROLE_SWITCH_PATTERN = r"\n\s*(?:System|Human|Assistant)\s*:"  # Fake conversational turn
 IGNORE_INSTRUCTION_PATTERN = r"\n\s*(?:Ignore|Forget|Disregard|Override)"  # Instruction override
 TEMPLATE_PATTERN = r"{{.*?}}"  # Template injection
 JINJA_PATTERN = r"{%.*?%}"  # Jinja-like injection
@@ -48,8 +48,33 @@ class PromptDefense:
     }
 
     @staticmethod
+    def _break_newline_anchor(match: re.Match[str]) -> str:
+        """Neutralize a newline-anchored injection marker.
+
+        The separator and role-switch attacks all rely on a leading line break to
+        forge a prompt boundary. Turning every newline inside the matched marker
+        into a space removes that boundary while preserving the visible words, so
+        the marker can no longer read as the start of a new turn or the end of the
+        system prompt.
+
+        Args:
+            match: A match of one of the newline-anchored injection patterns.
+
+        Returns:
+            The matched text with its internal newlines replaced by spaces.
+        """
+        return match.group(0).replace("\n", " ")
+
+    @staticmethod
     def sanitize(text: str) -> str:
         """Sanitize user input to prevent injection.
+
+        Removes template/markup delimiters and angle brackets, and neutralizes
+        newline-based injection markers (separator lines such as ``\\n---\\n`` and
+        role-switch markers such as ``\\nSystem:``) by breaking the line boundary
+        they depend on. Ordinary paragraph newlines and legitimate content are
+        preserved. The result no longer trips ``is_injection_attempt`` for the
+        newline attacks this defends against.
 
         Args:
             text: User input text
@@ -65,6 +90,16 @@ class PromptDefense:
 
         # Remove angle brackets
         sanitized = sanitized.replace("<", "").replace(">", "")
+
+        # Neutralize newline-anchored injection. Collapse separator lines to a
+        # single space, then de-anchor role-switch and instruction-override
+        # markers so a line break can no longer forge a prompt boundary. Order
+        # matters: collapsing the separator first can expose a role switch on the
+        # line that followed it (e.g. "\n---\nSystem:"), which the next step then
+        # neutralizes.
+        sanitized = _SEPARATOR_RE.sub(" ", sanitized)
+        sanitized = _ROLE_SWITCH_RE.sub(PromptDefense._break_newline_anchor, sanitized)
+        sanitized = _IGNORE_INSTRUCTION_RE.sub(PromptDefense._break_newline_anchor, sanitized)
 
         return sanitized
 
