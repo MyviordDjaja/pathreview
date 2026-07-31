@@ -10,7 +10,7 @@ logger = structlog.get_logger()
 #
 # ``sanitize()`` and ``is_injection_attempt()`` both build on these constants so
 # the "clean" and "detect" sides of the defense cannot drift apart. That drift is
-# the root cause of issue #64: detection already knew ``\n---\n`` and ``\nSystem:``
+# the root cause of issue #64. Detection already knew ``\n---\n`` and ``\nSystem:``
 # were dangerous, yet the sanitizer never acted on them.
 SEPARATOR_PATTERN = r"\n\s*---+\s*\n"  # Separator line that can end the system prompt
 ROLE_SWITCH_PATTERN = r"\n\s*(?:System|Human|Assistant)\s*:"  # Fake conversational turn
@@ -94,9 +94,9 @@ class PromptDefense:
         # Neutralize newline-anchored injection. Collapse separator lines to a
         # single space, then de-anchor role-switch and instruction-override
         # markers so a line break can no longer forge a prompt boundary. Order
-        # matters: collapsing the separator first can expose a role switch on the
-        # line that followed it (e.g. "\n---\nSystem:"), which the next step then
-        # neutralizes.
+        # matters here, because collapsing the separator first can expose a role
+        # switch on the line that followed it (for example "\n---\nSystem:"),
+        # which the next step then neutralizes.
         sanitized = _SEPARATOR_RE.sub(" ", sanitized)
         sanitized = _ROLE_SWITCH_RE.sub(PromptDefense._break_newline_anchor, sanitized)
         sanitized = _IGNORE_INSTRUCTION_RE.sub(PromptDefense._break_newline_anchor, sanitized)

@@ -1,10 +1,10 @@
-# Module 3 Journal: PathReview
+# Module 3 Journal for PathReview
 
 A running record of my Module 3 contribution work. A new section is added each week.
 
 ---
 
-## Week 7: Issue selection
+## Week 7 Issue selection
 
 **Issue link:** https://github.com/ascherj/pathreview/issues/64
 
@@ -30,7 +30,7 @@ newline tricks, covered by tests that inject these payloads and assert they are 
 **Setup confirmation:** [x] App runs locally at localhost:5173
 > Frontend (Vite dev server) confirmed loading at http://localhost:5173, `HTTP 200`, page title
 > "PathReview - AI Portfolio Review Assistant". Python deps installed into a local `.venv`
-> (`pip install -e ".[dev]"`) and the unit test suite runs. Note: Docker was not available in my
+> (`pip install -e ".[dev]"`) and the unit test suite runs. Note that Docker was not available in my
 > environment, so the Postgres/Redis/Chroma backing services and the FastAPI backend were not
 > brought up. The `localhost:5173` frontend loads independently of them.
 
@@ -40,7 +40,7 @@ newline tricks, covered by tests that inject these payloads and assert they are 
 
 ---
 
-### Selection notes: "Is this right for me?" reasoning
+### Selection notes on "Is this right for me?"
 
 - **Scope is tight and well-defined.** The issue names exactly one file (`safety/prompt_defense.py`)
   and the exact patterns being missed (`\n---\n`, `\nSystem:`). I'm not guessing at acceptance
@@ -53,26 +53,27 @@ newline tricks, covered by tests that inject these payloads and assert they are 
   module and not a multi-file architectural change I'd still be untangling next week.
 - **Skills match.** It's Python plus regex plus a clear input/output contract, squarely within what I can
   do without needing the full backend stack running.
-- **Known caveat (being honest):** the issue is crowded. Several people (including a TF, `mdoran3`)
+- **Known caveat (being honest).** The issue is crowded. Several people (including a TF, `mdoran3`)
   have commented claiming it, though no one has an open PR yet. I'm proceeding because it's still
   open and unclaimed by any PR, and I'd rather do a real security fix and risk being scooped than
   pick something trivial. Flagging this for standup so the cohort can decide how to handle duplicate
   claims.
 
-### Environment / setup notes
+### Environment and setup notes
 
 - Forked `ascherj/pathreview`, cloned my fork (`MyviordDjaja/pathreview`), added `upstream` remote.
 - Created `.venv` and installed dev dependencies (`pip install -e ".[dev]"`) on Python 3.14.
-- Ran the unit suite: **375 passed / 53 failed** overall, which is expected, since this course repo is
-  intentionally seeded with the bugs the tracker issues describe (each tier issue is roughly one failing test).
+- Ran the unit suite and got **375 passed / 53 failed** overall, which is expected, since this course
+  repo is intentionally seeded with the bugs the tracker issues describe (each tier issue is roughly
+  one failing test).
 - Frontend confirmed at `localhost:5173` (see Setup confirmation above).
-- Docker/Compose was not installed in my environment, so the Postgres plus Redis plus Chroma services and
-  the FastAPI backend were not started this week. Not a blocker for issue #64, whose fix and tests
+- Docker/Compose was not installed in my environment, so the Postgres plus Redis plus Chroma services
+  and the FastAPI backend were not started this week. Not a blocker for issue #64, whose fix and tests
   live entirely in the `safety` module and run under `pytest` without those services.
 
 ---
 
-## Week 8: Reproduction & solution planning
+## Week 8 Reproduction and solution planning
 
 **Reproduction commit link:** https://github.com/MyviordDjaja/pathreview/commit/47a15e10b74f9ac6db8f04560eb8169b5b0be2d4
 
@@ -88,21 +89,22 @@ sanitized output), confirming the issue is real and lives in `safety/prompt_defe
 **Walkthrough video (recommended):** not recorded
 
 **Blockers or open questions:**
-- Design choice for the fix: strip the newline markers versus escape/de-anchor them (break the line
-  boundary without deleting content). No non-test code currently calls `PromptDefense`, so there's no
-  downstream consumer constraining the exact output, and I'll keep the transformation minimal.
+- Design choice for the fix is whether to strip the newline markers or escape and de-anchor them
+  (break the line boundary without deleting content). No non-test code currently calls `PromptDefense`,
+  so there's no downstream consumer constraining the exact output, and I'll keep the transformation
+  minimal.
 - Whether to also fix the related detection gap (`System  :` with spaces before the colon, the
   existing failing `test_whitespace_variations_detected`) within this issue's scope. Leaning yes,
   since it's the same module and the same newline theme.
 
 ---
 
-## Week 9: Solution building & PR submission
+## Week 9 Solution building and PR submission
 
 ### Check-in 1 (mid-week)
 
 **Current progress:**
-Implemented the fix in `safety/prompt_defense.py` iteratively, following PLAN.md, in three commits:
+Implemented the fix in `safety/prompt_defense.py` iteratively, following PLAN.md, across three commits.
 - `refactor:` extracted the injection regexes into shared module-level constants so `sanitize()`
   and `is_injection_attempt()` use one source of truth (PLAN sub-task 1). Behavior-neutral.
 - `fix:` `sanitize()` now collapses separator lines (`\n---\n`) and de-anchors role-switch and
@@ -144,10 +146,11 @@ safety. The Week-8 reproduction file `tests/unit/test_prompt_defense_newline_rep
 unchanged.
 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
-> "Passes" per the documented pre-existing-failures rule: my change introduces **no new** failures.
-> Baseline `make test-unit` was 56 failed / 375 passed, then 52 failed / 379 passed after (the 4-test
-> delta is exactly my in-scope tests, and no `safety` tests fail). `make lint` and `make typecheck` have
-> pre-existing repo-wide errors. My two files are clean except one pre-existing `F841` in
-> `test_code_blocks_handled` that predates this issue. Documented in the PR's Notes for Reviewers.
+> Under the documented pre-existing-failures rule, "passes" means my change introduces **no new**
+> failures. Baseline `make test-unit` was 56 failed / 375 passed, then 52 failed / 379 passed after
+> (the 4-test delta is exactly my in-scope tests, and no `safety` tests fail). `make lint` and
+> `make typecheck` have pre-existing repo-wide errors. My two files are clean except one pre-existing
+> `F841` in `test_code_blocks_handled` that predates this issue. Documented in the PR's Notes for
+> Reviewers.
 
 **Draft PR feedback received from:** _<name or Slack handle, or "none">_
