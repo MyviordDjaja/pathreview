@@ -140,7 +140,7 @@ paragraph newlines. The detect and sanitize sides now share one set of pattern c
 role-switch detector was tightened to catch `System  :`.
 
 **Tests added or updated:**
-`tests/unit/test_prompt_defense.py` gained 8 tests covering sanitize neutralization, idempotency,
+`tests/unit/test_prompt_defense.py` gained 7 tests covering sanitize neutralization, idempotency,
 clean-resume preservation, multi-payload handling, spaced-colon detection, and regex-backtracking
 safety. The Week-8 reproduction file `tests/unit/test_prompt_defense_newline_repro.py` now passes
 unchanged.
