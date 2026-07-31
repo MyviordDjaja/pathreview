@@ -1,9 +1,29 @@
 """Prompt injection detection and defense."""
 
 import re
+
 import structlog
 
 logger = structlog.get_logger()
+
+# Shared injection patterns.
+#
+# ``sanitize()`` and ``is_injection_attempt()`` both build on these constants so
+# the "clean" and "detect" sides of the defense cannot drift apart. That drift is
+# the root cause of issue #64: detection already knew ``\n---\n`` and ``\nSystem:``
+# were dangerous, yet the sanitizer never acted on them.
+SEPARATOR_PATTERN = r"\n\s*---+\s*\n"  # Separator line that can end the system prompt
+ROLE_SWITCH_PATTERN = r"\n\s*(?:System|Human|Assistant):"  # Fake conversational turn
+IGNORE_INSTRUCTION_PATTERN = r"\n\s*(?:Ignore|Forget|Disregard|Override)"  # Instruction override
+TEMPLATE_PATTERN = r"{{.*?}}"  # Template injection
+JINJA_PATTERN = r"{%.*?%}"  # Jinja-like injection
+CODE_EXECUTION_PATTERN = r"(?:execute|run|eval)\s*\("  # Code execution attempts
+
+# Pre-compiled forms of the newline-anchored patterns, used by ``sanitize()`` to
+# neutralize the attacks that a plain character strip cannot reach.
+_SEPARATOR_RE = re.compile(SEPARATOR_PATTERN)
+_ROLE_SWITCH_RE = re.compile(ROLE_SWITCH_PATTERN, re.IGNORECASE)
+_IGNORE_INSTRUCTION_RE = re.compile(IGNORE_INSTRUCTION_PATTERN, re.IGNORECASE)
 
 
 class PromptDefense:
@@ -11,12 +31,12 @@ class PromptDefense:
 
     # Patterns indicating prompt injection attempts
     INJECTION_PATTERNS = [
-        r"\n\s*---+\s*\n",  # Separator line
-        r"\n\s*(?:System|Human|Assistant):",  # Role switching
-        r"{{.*?}}",  # Template injection
-        r"{%.*?%}",  # Jinja-like injection
-        r"\n\s*(?:Ignore|Forget|Disregard|Override)",  # Explicit instructions to ignore
-        r"(?:execute|run|eval)\s*\(",  # Code execution attempts
+        SEPARATOR_PATTERN,
+        ROLE_SWITCH_PATTERN,
+        TEMPLATE_PATTERN,
+        JINJA_PATTERN,
+        IGNORE_INSTRUCTION_PATTERN,
+        CODE_EXECUTION_PATTERN,
     ]
 
     # Characters to strip from input
