@@ -94,3 +94,59 @@ sanitized output), confirming the issue is real and lives in `safety/prompt_defe
 - Whether to also fix the related detection gap (`System  :` with spaces before the colon, the
   existing failing `test_whitespace_variations_detected`) within this issue's scope. Leaning yes,
   since it's the same module and the same newline theme.
+
+---
+
+## Week 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Implemented the fix in `safety/prompt_defense.py` iteratively, following PLAN.md, in three commits:
+- `refactor:` — extracted the injection regexes into shared module-level constants so `sanitize()`
+  and `is_injection_attempt()` use one source of truth (PLAN sub-task 1). Behavior-neutral.
+- `fix:` — `sanitize()` now collapses separator lines (`\n---\n`) and de-anchors role-switch /
+  instruction markers (`\nSystem:`, `\nIgnore`) by turning the leading newline into a space, and the
+  role-switch detection regex was loosened to catch `System  :` (PLAN sub-tasks 2 & 3).
+- `test:` — added sanitize-neutralization, idempotency, clean-resume-preserved, multi-payload,
+  spaced-colon detection, and a ReDoS-guard test to the canonical `test_prompt_defense.py` (sub-task 4).
+All four in-scope tests (the 3 Week-8 reproduction tests + the pre-existing `test_whitespace_variations_detected`)
+now pass, and the design chose de-anchoring over deletion to avoid mangling legitimate resumes.
+
+**Next steps:**
+Confirm no regressions across the full unit suite (sub-task 5), write the PR description against the
+repo template, open a draft PR, and request peer feedback before marking it ready.
+
+**Blockers:**
+None. (Docker still unavailable locally, but this change needs no backing services — the `safety`
+module runs under `pytest` without them.)
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** _<fill in once the PR is opened — draft body prepared per the repo template>_
+
+**Branch:** `fix/64-sanitize-newline-injection`
+
+**What you built:**
+`PromptDefense.sanitize()` now neutralizes newline-based prompt injection: it collapses `\n---\n`
+separator lines and de-anchors `\nSystem:`-style role-switch and instruction-override markers so a
+line break can no longer forge a prompt boundary, while preserving legitimate content and ordinary
+paragraph newlines. The detect/sanitize sides now share one set of pattern constants, and the
+role-switch detector was tightened to catch `System  :`.
+
+**Tests added or updated:**
+`tests/unit/test_prompt_defense.py` — added 8 tests covering sanitize neutralization, idempotency,
+clean-resume preservation, multi-payload handling, spaced-colon detection, and regex-backtracking
+safety. The Week-8 reproduction file `tests/unit/test_prompt_defense_newline_repro.py` now passes
+unchanged.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+> "Passes" per the documented pre-existing-failures rule: my change introduces **no new** failures.
+> Baseline `make test-unit` was 56 failed / 375 passed → 52 failed / 379 passed after (the 4-test
+> delta is exactly my in-scope tests; no `safety` tests fail). `make lint`/`make typecheck` have
+> pre-existing repo-wide errors; my two files are clean except one pre-existing `F841` in
+> `test_code_blocks_handled` that predates this issue. Documented in the PR's Notes for Reviewers.
+
+**Draft PR feedback received from:** _<name or Slack handle, or "none">_
