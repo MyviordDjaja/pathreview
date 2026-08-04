@@ -128,7 +128,7 @@ module runs under `pytest` without them.)
 
 ### Check-in 2 (end of week)
 
-**PR link:** _<fill in once the PR is opened. Draft body prepared per the repo template>_
+**PR link:** https://github.com/ascherj/pathreview/pull/737
 
 **Branch:** `fix/64-sanitize-newline-injection`
 
