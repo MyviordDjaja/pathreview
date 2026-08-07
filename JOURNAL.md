@@ -154,3 +154,71 @@ unchanged.
 > Reviewers.
 
 **Draft PR feedback received from:** _<name or Slack handle, or "none">_
+
+---
+
+## Week 10 Iteration and reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No, still awaiting review
+
+**Summary of feedback:**
+N/A
+
+**How you responded:**
+N/A
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The design decision, not the code. I expected the hard part of a regex bug to be the regex, but the
+regexes took an afternoon and the question of what `sanitize()` should do with a match took longer.
+Stripping the payload outright would mangle a legitimate resume that happens to contain a `---`
+divider or the word "System", so I landed on de-anchoring (turning the leading newline into a space
+so the marker can no longer forge a line boundary) instead of deletion. Nothing in the issue told me
+which was right, and no non-test code even calls `PromptDefense`, so I had to infer the contract from
+the module's own docstrings and tests and then defend the choice in the PR. The other surprise was
+how much work "the tests pass" turned out to be in a repo that intentionally ships with 50-plus
+pre-existing failures. Proving my change was clean meant recording a baseline (56 failed / 375
+passed), rerunning after (52 failed / 379 passed), and showing the delta was exactly my in-scope
+tests. 
+
+**What did you learn about working in a large codebase?**
+That the codebase already contains most of the answer if you read it before writing anything. The
+key insight of my whole fix came from noticing that `is_injection_attempt()` already detected the
+exact patterns `sanitize()` ignored, which turned the fix from "invent a defense" into "make two
+sibling methods share one source of truth". In my own projects I would have just written new code.
+Here the right move was a behavior-neutral refactor first (extract the shared pattern constants) and
+the fix second, in separate commits, so a reviewer can see that the risky change is small. I also
+learned that in someone else's production code you spend real effort on things that are invisible in
+a solo project, like not widening scope (I almost pulled in a second detection gap and had to justify
+why it belonged), matching the existing test file's style, and writing the PR for a maintainer who
+has never met me and will not sit through an explanation.
+
+**How did AI tools help, and where did they fall short?**
+AI was most useful as a fast reader and a skeptical test partner. It traced the module and its 32
+existing tests quickly, helped me enumerate payload variants I would not have thought to try
+(`System  :` with spaces, multi-payload inputs, idempotency, a ReDoS guard on the new regexes), and
+caught small inconsistencies in my own journal, like a wrong added-test count. It fell short on
+judgment calls. It could lay out strip versus de-anchor as options but the choice, and owning the
+tradeoff in the PR, was mine. It also could not verify anything for real. Every "the tests should
+pass now" claim still had to be run against the actual suite, and the baseline-delta accounting for
+the pre-existing failures was something I had to define myself because the AI's default framing of
+"passing" did not fit this repo. AI accelerated the mechanical 70 percent and the remaining 30
+percent was exactly the part that needed a human.
+
+**What would you do differently if you started over?**
+I would get Docker working in week one rather than deciding it was not a blocker. It happened
+to be true for this issue, but if my fix had touched the API layer I would have lost
+days mid-module standing up the backing services under deadline pressure.
+
+**What are you most proud of from this module?**
+The reproduction commit. Before writing any fix I committed a failing test file that ran the
+documented payloads through `sanitize()` and proved the hole existed, and that one artifact carried
+the whole module. It forced me to understand the bug precisely, it defined "done" before I was
+attached to a solution, and by the end it became the acceptance test that passed unchanged against
+the final code. It is the first time I have really worked test-first on something adversarial, where
+the test is an attack, and it changed how I want to approach security-flavored work from now on.
