@@ -153,7 +153,7 @@ unchanged.
 > `F841` in `test_code_blocks_handled` that predates this issue. Documented in the PR's Notes for
 > Reviewers.
 
-**Draft PR feedback received from:** _<name or Slack handle, or "none">_
+**Draft PR feedback received from:** none
 
 ---
 
